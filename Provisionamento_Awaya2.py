@@ -1,30 +1,34 @@
 import openpyxl
 import os
 
+
+# Pergunta o nome do projeto
+nome_projeto = input("Qual o nome do projeto? ")
+
 # Diretório base onde os arquivos estão localizados
-diretorio_base = os.path.join(os.path.expanduser('~'), 'Projetos', 'Provisionamento_AVAYA_2')
+diretorio_base = os.path.join(os.path.expanduser('~'), 'Projetos', 'Importação_AVAYA')
 
 # Caminho completo para a planilha Excel e arquivo padrão
 caminho_planilha = os.path.join(diretorio_base, 'Padrão.xlsx')
 caminho_padrao = os.path.join(diretorio_base, 'Padrão.txt')
 
 # Diretório de saída para os arquivos modificados
-diretorio_saida = os.path.join(diretorio_base, 'SAIDA_TXT')
+diretorio_saida = os.path.join(diretorio_base, nome_projeto)
 
 # Verifica se o diretório de saída existe, senão cria
 if not os.path.exists(diretorio_saida):
     os.makedirs(diretorio_saida)
 
-# Abrindo Planilha e Buscando Folhas.
+# Abrindo Planilha e Buscando Folha.
 book = openpyxl.load_workbook(caminho_planilha)
-pagina = book['Planilha1']
+sheet = book.active  # Obtém a folha ativa (primeira folha por padrão)
 
 # Lê o conteúdo do arquivo Padrão.txt
 with open(caminho_padrao, 'r') as txt:
     linhas_padrao = txt.readlines()
 
 # Loop para percorrer toda a planilha.
-for row in pagina.iter_rows():
+for row in sheet.iter_rows():
     telefone_concatenado = str(row[0].value)
     mac = str(row[1].value)
 
