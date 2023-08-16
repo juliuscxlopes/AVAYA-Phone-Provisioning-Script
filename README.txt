@@ -27,7 +27,7 @@ Provisionamento_AVAYA -> Configuração e Atualização
 
 Atualização
 
-#1)- Planilha não precisa ter nome 'padrão.xlsx' Basta que esteja no formato XLSX e esteja dentro do directorio base do projeto.
+#1)- Executa o codigo com todas a planilhas que estiverem dentro do directorio
 
 #2)- directorio Saída com o mesmo nome da planilha fornecida.
 
