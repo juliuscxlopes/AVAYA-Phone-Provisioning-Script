@@ -21,6 +21,21 @@ Provisionamento_AVAYA -> Configuração e Atualização
 #3)- Ao Rodar o codigo, será criado um directorio cujo o nome é SAIDA
         Retire os TXT's e aloque nos devidos lugares para seu uso.
         exclua a pasta saida para não haver erro (directorio existente)
+
+
+
+
+Atualização
+
+#1)- Planilha não precisa ter nome 'padrão.xlsx' Basta que esteja no formato XLSX e esteja dentro do directorio base do projeto.
+
+#2)- directorio Saída com o mesmo nome da planilha fornecida.
+
+#3)- Janela Com mensagem de conclusão!!
+
+
+
+
         
 
 
