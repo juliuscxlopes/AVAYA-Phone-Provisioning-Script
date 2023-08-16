@@ -1,44 +1,21 @@
+Codigo desenvolvido para Atualização e configuração de aparelhos AVAYA
 
-README
+        - O codigo gera a partir de uma planilha com RAMAIS e MAC's arquivos TXT formatados para Importação AVAYA.
 
-Provisionamento_AVAYA -> Configuração e Atualização 
+        - A formatação da Planilha é fundamental para o funcinamento do Codigo.
+                -RAMAIS posicionado na coluna A
+                -MAC's na coluna B
+                        - O codigo nao faz formatação da planilha. Precisa que a mesma esteja com as informações formatadas conforme acima.
 
-
-# 1)- EXPLICAÇÃO 
-        Com o objetivo de automatizar a atualização e configuração de aparelhos AVAYA, o codigo basea-se em um TXT Padrão que esta com a formatação disponibilizada pela AVAYA como protocolo de atualização e configuração
-        O codigo pega o Padrão.txt e atualiza as informações necessarias de ramais e MAC.
-        Necessita de uma planilha fornecida pela area tecnica que indica ramais e mac utilizados na implantação ou na manutenção executante.
-        No dictorio há uma planilha Padrão.XLSX que é a formatação pela qual deve-se seguir para o funcionamento do codigo.
-                exprimindo 2 informações basicas, pré-fixo + Ramal na coluna A.
-                na coluna B o MAC do aparelho.
-
-        O Codigo susten-se na padronização de cada linha da planilha em um txt eclusivo para atualização remota de aparelhos AVAYA.
-
-
-
-#2)- ATUALIZE sua planilha dentro dos padrões já previsto na planilha Padrão.XLSX
-
-#3)- Ao Rodar o codigo, será criado um directorio cujo o nome é SAIDA
-        Retire os TXT's e aloque nos devidos lugares para seu uso.
-        exclua a pasta saida para não haver erro (directorio existente)
-
-
-
-
-Atualização
-
-#1)- Executa o codigo com todas a planilhas que estiverem dentro do directorio
-
-#2)- directorio Saída com o mesmo nome da planilha fornecida.
-
-#3)- Janela Com mensagem de conclusão!!
-
-
-
-
+        - A planilha deve estar no mesmo directorio do Projeto.
+                - C:\Users\' USUARIO'\Projetos\Importação_AVAYA
+                - Assim o Codigo irá buscar todos os arquivos que estão com a extensão .xlsx
+                - O codigo está preparado para receber diversos fluxos de planilhas. Ou seja, Mais de uma planilha que estiver no directorio.
         
+        - O Codigo Cria um directorio de Saida com o mesmo nome da planilha do qual ele extrai os dados.
+                - em caso de varias planilhas o codigo criará uma pasta para cada planilha.
 
+        - Padrão.txt
+                Oferece a formatação necessaria AVAYA. Qualquer alteração na formatação, não funcionará no proximo esstagio de importação.
 
-
-
-
+Desenvolvido por Julius Lopes.                
