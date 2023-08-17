@@ -1,104 +1,118 @@
 import openpyxl
 import os
-import glob
 import tkinter as tk
-from tkinter import messagebox, scrolledtext
+from tkinter import scrolledtext
+from tkinter import simpledialog
+from pathlib import Path
 
-# Função para fechar a janela Tkinter
-def fechar_janela():
-    root.destroy()
+class Elementos_graficos:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Status de Processamento")
 
-# Função principal para processar os arquivos
-def processar_arquivos():
-    # Diretório base onde os arquivos estão localizados
-    diretorio_base = os.path.join(os.path.expanduser('~'), 'Projetos', 'Importação_AVAYA')
+        self.output_text = scrolledtext.ScrolledText(self.root, wrap=tk.WORD)
+        self.output_text.pack(fill=tk.BOTH, expand=True)
 
-    # Busca por arquivos XLSX no diretório base
-    arquivos_xlsx = glob.glob(os.path.join(diretorio_base, '*.xlsx'))
+        self.botao_processar = tk.Button(self.root, text="Gerar Arquivos", command=self.processar_arquivos)
+        self.botao_processar.pack()
 
-    # Verifica se foram encontrados arquivos XLSX
-    if not arquivos_xlsx:
-        output_text.insert(tk.END, "Nenhum arquivo XLSX encontrado no diretório base.\n")
-    else:
-        # Lê o conteúdo do arquivo Padrão.txt
-        caminho_padrao = os.path.join(diretorio_base, 'Padrão.txt')
-        with open(caminho_padrao, 'r') as txt:
-            linhas_padrao = txt.readlines()
+    def processar_arquivos(self):
+        diretorio_base = Path(os.path.expanduser('~')) / 'Projetos' / 'Importação_AVAYA'
+        arquivos_xlsx = list(diretorio_base.glob('*.xlsx'))
 
-        # Loop para processar cada planilha encontrada
-        for caminho_planilha in arquivos_xlsx:
-            # Extrai o nome da planilha (sem extensão)
-            nome_planilha = os.path.splitext(os.path.basename(caminho_planilha))[0]
+        if not arquivos_xlsx:
+            self.output_text.insert(tk.END, "Nenhum arquivo XLSX encontrado no diretório base.\n")
+        else:
+            caminho_padrao = diretorio_base / 'Padrão.txt'
+            linhas_padrao = self.ler_linhas_padrao(caminho_padrao)
 
-            # Diretório de saída para os arquivos modificados
-            diretorio_saida = os.path.join(diretorio_base, nome_planilha)
+            for caminho_planilha in arquivos_xlsx:
+                nome_planilha = os.path.splitext(caminho_planilha.name)[0]
+                diretorio_saida = diretorio_base / nome_planilha
 
-            # Verifica se o diretório de saída existe, senão cria
-            if not os.path.exists(diretorio_saida):
-                os.makedirs(diretorio_saida)
+                if not diretorio_saida.exists():
+                    diretorio_saida.mkdir(parents=True)
 
-            # Carrega a planilha
-            planilha = openpyxl.load_workbook(caminho_planilha)
-            folha = planilha.active  # Obtém a folha ativa (primeira folha por padrão)
-
-            # Lista para armazenar nomes de arquivos gerados com sucesso
-            arquivos_gerados = []
-
-            # Loop para percorrer toda a planilha.
-            for row in folha.iter_rows():
-                telefone_concatenado = str(row[0].value)
-                mac = str(row[1].value)
+                planilha = openpyxl.load_workbook(caminho_planilha)
+                folha = planilha.active
                 
-                # Verifica se a linha está vazia ou se não há telefone ou mac
-                if not telefone_concatenado or not mac:
-                    continue
+                num_linhas = folha.max_row  # Obtém o número total de linhas na planilha
+                titulos_colunas = [cell.value.lower() if cell.value else '' for cell in folha[1]]  # Converta para minúsculas
+                
+                if "ramal" in titulos_colunas and "mac" in titulos_colunas:  # Verifica se as colunas "ramal" e "mac" estão presentes
+                    arquivos_gerados = self.processar_planilha(planilha, diretorio_saida, linhas_padrao, nome_planilha)
+                    if arquivos_gerados:   
+                        self.output_text.insert(tk.END, f"Todos os ramais da \"{nome_planilha}\" foram criados e salvos:\n")
+                        for arquivo in arquivos_gerados:
+                            self.output_text.insert(tk.END, f"- {arquivo}\n")
+                        self.output_text.insert(tk.END, f"{num_linhas} Arquivos gerados com sucesso!!\n\n")
+                else:
+                    self.output_text.insert(tk.END, f"Não foi encontrado o título 'RAMAL' ou 'MAC' na planilha '{nome_planilha}'.\n")
 
-                # Remove os ":" do endereço MAC.
-                mac_s_P = mac.replace(":", "")
+    def ler_linhas_padrao(self, caminho_padrao):
+        with open(caminho_padrao, 'r') as txt:
+            return txt.readlines()
 
-                # Alterações de Texto no TXT PADRÃO.
-                linhas_modificadas = []
-                for linha in linhas_padrao:
-                    if 'SET FORCE_SIP_USERNAME' in linha:
-                        linhas_modificadas.append(f'SET FORCE_SIP_USERNAME {telefone_concatenado}\n')
-                    elif 'SET FORCE_SIP_EXTENSION' in linha:
-                        linhas_modificadas.append(f'SET FORCE_SIP_EXTENSION {telefone_concatenado}\n')
-                    elif 'SET SIP_USER_ACCOUNT' in linha:
-                        linhas_modificadas.append(f'SET SIP_USER_ACCOUNT {telefone_concatenado}@10.159.0.54\n')
-                    elif 'SET PREV_SIP_USER_ACCOUNT' in linha:
-                        linhas_modificadas.append(f'SET PREV_SIP_USER_ACCOUNT {telefone_concatenado}@10.159.0.54\n')
-                    elif 'SET DISPLAY_NAME' in linha:
-                        linhas_modificadas.append(f'SET DISPLAY_NAME {telefone_concatenado}\n')
-                    else:
-                        linhas_modificadas.append(linha)
+    def criar_arquivo(self, nome_arquivo, linhas_modificadas):
+        with open(nome_arquivo, 'w') as txt:
+            txt.writelines(linhas_modificadas)
 
-                nome_arquivo = f"{mac_s_P}.txt"
+    def processar_planilha(self, planilha, diretorio_saida, linhas_padrao, nome_planilha):
+        self.output_text.insert(tk.END, f"Processando planilha: {nome_planilha}.\n")
+        folha = planilha.active
+        arquivos_gerados = []
+        
+        titulos_colunas = [cell.value.lower() if cell.value is not None else '' for cell in folha[1]]
+        ramal_index = titulos_colunas.index("ramal")
+        mac_index = titulos_colunas.index("mac")
+        
+        num_linhas = sum(1 for row in folha.iter_rows(min_row=2) if any(cell.value for cell in row))
+        if num_linhas < 1:  # Verifique se há pelo menos uma linha de dados (além do título)
+            self.output_text.insert(tk.END, f"A planilha '{nome_planilha}' não tem dados suficientes para processar.\n")
+            return  # Sair da função pois não há dados suficientes para processar.
 
-                # Constrói o caminho completo para o destino.
+        prefixo = None
+        
+        for row in folha.iter_rows(min_row=2):
+            ramal = str(row[ramal_index].value)
+            mac = str(row[mac_index].value)
+            
+            if len(ramal) != 12:
+                if prefixo is None: #Se o prefixo ainda nao foi definido
+                    prefixo = tk.simpledialog.askstring("Prefixo", "Insira o prefixo para o ramal:")
+                    if prefixo is not None:
+                        continue #Se o usuário cancelar a caixa de diálogo, interrompe o sistema.
+                
+                ramal = prefixo + ramal #concatena o prefixo ao ramal
+                
+            linhas_modificadas = []
+            for linha in linhas_padrao:
+                if 'SET FORCE_SIP_USERNAME' in linha:
+                    linhas_modificadas.append(f'SET FORCE_SIP_USERNAME {ramal}\n')
+                elif 'SET FORCE_SIP_EXTENSION' in linha:
+                    linhas_modificadas.append(f'SET FORCE_SIP_EXTENSION {ramal}\n')
+                elif 'SET SIP_USER_ACCOUNT' in linha:
+                    linhas_modificadas.append(f'SET SIP_USER_ACCOUNT {ramal}@10.159.0.54\n')
+                elif 'SET PREV_SIP_USER_ACCOUNT' in linha:
+                    linhas_modificadas.append(f'SET PREV_SIP_USER_ACCOUNT {ramal}@10.159.0.54\n')
+                elif 'SET DISPLAY_NAME' in linha:
+                    linhas_modificadas.append(f'SET DISPLAY_NAME {ramal}\n')
+                else:
+                    linhas_modificadas.append(linha)
+                        
+            mac = str(row[mac_index].value).replace(':', '')
+            if mac is not None:  # Verifica se 'mac' não é None
+                nome_arquivo = f"{mac}.txt"
                 caminho_completo = os.path.join(diretorio_saida, nome_arquivo)
+                self.criar_arquivo(caminho_completo, linhas_modificadas)
+                arquivos_gerados.append(nome_arquivo)
+            else:
+                pass    
 
-                with open(caminho_completo, 'w') as txt:
-                    txt.writelines(linhas_modificadas)
+            
+        return arquivos_gerados
 
-                    # Armazena o nome do arquivo gerado com sucesso
-                    arquivos_gerados.append(nome_arquivo)
-
-            output_text.insert(tk.END, f"Todos os ramais da \"{nome_planilha}\" foram criados e salvos:\n")
-            for arquivo in arquivos_gerados:
-                output_text.insert(tk.END, f"- {arquivo}\n")
-            output_text.insert(tk.END, "Arquivos gerados com sucesso!!\n\n")
-
-# Cria uma janela Tkinter
-root = tk.Tk()
-root.title("Status de Processamento")
-
-# Cria um widget de texto rolável para exibir a saída
-output_text = scrolledtext.ScrolledText(root, wrap=tk.WORD)
-output_text.pack(fill=tk.BOTH, expand=True)
-
-# Botão para processar os arquivos
-botao_processar = tk.Button(root, text="Processar Arquivos", command=processar_arquivos)
-botao_processar.pack()
-
-# Inicia o loop principal do Tkinter
-root.mainloop()
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = Elementos_graficos(root)
+    root.mainloop()
