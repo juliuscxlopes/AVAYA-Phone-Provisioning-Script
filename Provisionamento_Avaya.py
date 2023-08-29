@@ -106,29 +106,38 @@ class Elementos_graficos:
         self.output_text.insert(tk.END, f"Processando planilha: {nome_planilha}.\n")
         folha = planilha.active
         arquivos_gerados = []
-        
+
         ramal_index = titulos_colunas.index("ramal")
         mac_index = titulos_colunas.index("mac")
-        
+
         num_linhas = sum(1 for row in folha.iter_rows(min_row=2) if any(cell.value for cell in row))
         if num_linhas < 1:  # Verifique se há pelo menos uma linha de dados (além do título)
             self.output_text.insert(tk.END, f"A planilha '{nome_planilha}' não tem dados suficientes para processar.\n")
-            return  # Sair da função pois não há dados suficientes para processar.       
+            return  # Sair da função pois não há dados suficientes para processar.
 
-        prefixo = self.solicitar_prefixo()
-        if prefixo is None:
-            return  # Sair da função se o prefixo não for fornecido ou cancelado.
+        prefixo_solicitado = False  # Adicione uma variável para rastrear se o prefixo já foi solicitado.
 
         sobrevivencia = self.solicitar_sobrevivencia()
         if sobrevivencia is None:
             return  # Sair da função se a sobrevivência não for fornecida ou cancelada.
-        
+
         for row in folha.iter_rows(min_row=2):
             ramal = str(row[ramal_index].value)
             mac = str(row[mac_index].value)
             
+            if ramal is None or ramal == "None":
+                continue # Pule para a próxima iteração do loop se o ramal ou mac forem "Null"
+
             if len(ramal) != 12:
-                ramal = prefixo + ramal  # Concatena o prefixo ao ramal
+                if not prefixo_solicitado:
+                    prefixo = self.solicitar_prefixo()  # Solicite o prefixo apenas se o ramal não tiver 12 dígitos e o prefixo ainda não foi solicitado
+                    if prefixo is None:
+                        return
+                    prefixo_solicitado = True  # Defina a variável como True para indicar que o prefixo já foi solicitado
+                ramal = prefixo + ramal  # Concatene o prefixo ao ramal apenas se necessário
+                    
+            if ':' in mac: # Verifique se há ':' no MAC e remova-os
+                mac = mac.replace(':', '')
                 
             linhas_modificadas = []
             for linha in linhas_padrao:
@@ -143,16 +152,14 @@ class Elementos_graficos:
                 elif 'SET DISPLAY_NAME' in linha:
                     linhas_modificadas.append(f'SET DISPLAY_NAME {ramal}\n')
                 elif 'SET SIP_CONTROLLER_LIST "10.159.0.54:5060;transport=udp' in linha:
-                    linhas_modificadas.append(f'SET SIP_CONTROLLER_LIST "10.159.0.54:5060;transport=udp, {sobrevivencia}"\n')   
+                    linhas_modificadas.append(f'SET SIP_CONTROLLER_LIST "10.159.0.54:5060;transport=udp,{sobrevivencia}:5060;transport=udp"\n')   
                 else:
                     linhas_modificadas.append(linha)
                         
-            mac = str(row[mac_index].value).replace(':', '')
             nome_arquivo = f"{mac}.txt"
             caminho_completo = os.path.join(diretorio_saida, nome_arquivo)
             self.criar_arquivo(caminho_completo, linhas_modificadas)
-            arquivos_gerados.append(nome_arquivo) 
-                        
+            arquivos_gerados.append(nome_arquivo)        
         return arquivos_gerados
 
 if __name__ == "__main__":
